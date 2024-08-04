@@ -20,27 +20,27 @@ Finally, an ARIMA model is fitted to each topic to forecast its prominence over 
 ## Repository Structure
 
 ├── data/
-│ ├── df_full.csv # Complete dataset (available upon request)
-│ ├── manual_fix.csv # Dataset with hand-picked rows for manual filtering during cleaning
+│   ├── df_full.csv # Complete dataset (available upon request)
+│   ├── manual_fix.csv # Dataset with hand-picked rows for manual filtering during cleaning
 ├── models/
-│ ├── model_summary_[topic].txt # ARIMA model summaries for each topic analyzed
+│   ├── model_summary_[topic].txt # ARIMA model summaries for each topic analyzed
 ├── documents/
-│ ├── [australia_2019.pdf] # Original documents used for analysis
-│ ├── [australia_2022.pdf] # 62 documents in total
-│ ├── ...
+│   ├── australia_2019.pdf # Original documents used for analysis
+│   ├── australia_2022.pdf # 62 documents in total
+│   ├── ...
 ├── plots/
-│ ├── pacf_all_topics.png # PACF plots for each topic
-│ ├── proportion_per_topic_per_year.png # Proportion of topics over time
-│ ├── forecast_[topic].png # Forecast plot for each topic
-│ ├── all_forecasts.png # Combined forecast plots for all topics
+│   ├── pacf_all_topics.png # PACF plots for each topic
+│   ├── proportion_per_topic_per_year.png # Proportion of topics over time
+│   ├── forecast_[topic].png # Forecast plot for each topic
+│   ├── all_forecasts.png # Combined forecast plots for all topics
 ├── results/
-│ ├── results.csv # RMSE and MAE metrics for ARIMA and Naive Mean Models
+│   └── results.csv # RMSE and MAE metrics for ARIMA and Naive Mean Models
 ├── src/
-│ ├── data_cleaning.py # Script for data cleaning and preprocessing
-│ ├── topic_modeling.py # Script for topic modeling using BERTopic
-│ ├── p_and_d_determination.py # Script for determening p and d values for ARIMA models
-│ ├── fit_arima.py # Script for fitting ARIMA models and generating forecasts
-│ ├── README.md # Further description of the scripts in this folder
+│   ├── data_cleaning.py # Script for data cleaning and preprocessing
+│   ├── topic_modeling.py # Script for topic modeling using BERTopic
+│   ├── p_and_d_determination.py # Script for determining p and d values for ARIMA models
+│   ├── fit_arima.py # Script for fitting ARIMA models and generating forecasts
+│   └── README.md # Further description of the scripts in this folder
 ├── .gitignore # Files and directories to be ignored by Git
 ├── requirements.txt # List of Python packages required for the project
 ├── setup.sh # Script to set up the virtual environment and install dependencies
