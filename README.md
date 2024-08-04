@@ -19,6 +19,7 @@ Finally, an ARIMA model is fitted to each topic to forecast its prominence over 
 
 ## Repository Structure
 
+```
 ├── data/
 │   ├── df_full.csv # Complete dataset (available upon request)
 │   ├── manual_fix.csv # Dataset with hand-picked rows for manual filtering during cleaning
@@ -46,6 +47,7 @@ Finally, an ARIMA model is fitted to each topic to forecast its prominence over 
 ├── setup.sh # Script to set up the virtual environment and install dependencies
 ├── LICENSE # License information for the project
 └── README.md # Project overview and instructions
+```
 
 ## Getting Started
 
