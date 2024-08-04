@@ -1,0 +1,6 @@
+Foundational Research:1
+Computing Components:0
+Sensing and Measurement:0
+Systems and Manipulation Techniques:1
+Cryptography and Secure Communication:0
+Photonics:0

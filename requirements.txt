@@ -1,0 +1,11 @@
+pandas==1.4.4
+numpy==1.24.3
+pypdf2==2.10.5
+nltk==3.8.1
+scikit-learn==1.2.2
+matplotlib==3.5.3
+seaborn==0.11.2
+numpy==1.24.3
+bertopic==0.14.0
+statsmodels==0.14.1
+pmdarima==2.0.4

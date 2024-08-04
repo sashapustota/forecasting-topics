@@ -1,0 +1,26 @@
+# Ignore .DS_Store files (common on macOS)
+.DS_Store
+
+# Ignore specific dataframes
+data/df_full.csv
+data/df_topics_correct.csv
+data/df_topics.csv
+data/d_values.csv
+data/df_filtered.csv
+data/df_clean.csv
+
+# Ignore the forecasting-topic-venv virtual environment
+forecasting-topics-venv/
+
+# Ignore virtual environment directories
+venv/
+env/
+.venv/
+.env/
+
+# Ignore Python egg cache
+*.egg-info/
+*.eggs/
+
+# Ignore pip cache
+__pycache__/
