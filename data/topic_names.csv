@@ -1,0 +1,77 @@
+Category,original_name,new_name,n_of_topics
+"Industry, Use Cases, and Commercial Applications",technology - industry - opportunity,Quantum Technology Industry and Innovation,9
+"Industry, Use Cases, and Commercial Applications",standard - technology - standardisation,Quantum Technology Standardization and Research,9
+"Industry, Use Cases, and Commercial Applications",compute - computer - application,Quantum Computing and Applications,9
+"Industry, Use Cases, and Commercial Applications",technology - market - qit,Quantum Technology Market and Industry Analysis,9
+"Industry, Use Cases, and Commercial Applications",patent - investment - capital,Quantum Technology Investment and Intellectual Property,9
+"Industry, Use Cases, and Commercial Applications",technology - risk - security,Risk Management and International Security in Quantum Technologies,9
+"Industry, Use Cases, and Commercial Applications",image - optical - photon,Photonics and Optical Technologies in Quantum Applications,9
+"Industry, Use Cases, and Commercial Applications",sensor - sense - navigation,Sensing and Navigation Technologies in Quantum Applications,9
+"Industry, Use Cases, and Commercial Applications",communication - cryptography - secure,Quantum Communication and Cryptography,9
+National Strategy and Recommendations,technology - development - research,Emerging Technology and Innovation,11
+National Strategy and Recommendations,research - technology - project,Scientific Research and Collaboration,11
+National Strategy and Recommendations,technology - industry - support,Technology and Industry Support,11
+National Strategy and Recommendations,talent - technology - student,Education and Talent Development in Science and Technology,11
+National Strategy and Recommendations,computer - qubits - system,Quantum Computing and Simulation Systems,11
+National Strategy and Recommendations,communication - cryptography - network,Secure Communication and Cryptography Systems,11
+National Strategy and Recommendations,compute - software - computer,Computing and Software Development,11
+National Strategy and Recommendations,year - budget - project,Government Research and Project Funding,11
+National Strategy and Recommendations,sensor - measurement - technology,Advanced Sensor Technology and Applications,11
+National Strategy and Recommendations,security - technology - national,National Security and Defense Technology,11
+National Strategy and Recommendations,photonics - photonic - optical,Photonics and Optical Technology,11
+Research and Development,photon - optical - source,Quantum Photonics,14
+Research and Development,technology - research - science,Quantum Innovation Ecosystem,14
+Research and Development,qubits - qubit - gate,Quantum Computing Components,14
+Research and Development,computer - problem - classical,Quantum Computing Algorithms and Simulations,14
+Research and Development,entanglement - state - entangle,Quantum Entanglement and Quantum Information,14
+Research and Development,network - technology - system,Quantum Technology Infrastructure and Applications,14
+Research and Development,atom - ion - trap,Quantum Systems and Manipulation Techniques.,14
+Research and Development,sensor - image - use,Quantum Sensing and Measurement,14
+Research and Development,security - key - communication,Quantum Cryptography and Secure Communication,14
+Research and Development,system - error - control,Quantum Computing and Error Correction,14
+Research and Development,material - technology - device,Quantum Materials and Devices,14
+Research and Development,physic - theory - information,Foundations of Quantum Theory and Experimental Physics,14
+Research and Development,spin - state - single,Quantum Spin Control and Magnetic Resonance,14
+Research and Development,clock - atomic - frequency,Quantum Clocks and Precision Timekeeping,14
+Executive Summary,technology - research - flagship,Advanced Quantum Technology and Innovation Initiatives,11
+Executive Summary,technology - opportunity - development,Emerging Quantum Technology and Economic Opportunities.,11
+Executive Summary,research - national - science,Quantum Research and Academic Collaboration,11
+Executive Summary,investment - technology - company,Quantum Technology Investment and Ecosystem Development,11
+Executive Summary,computer - system - classical,Quantum Computing and Information Systems,11
+Executive Summary,computer - qubits - system,Quantum Computing and Qubit Systems,11
+Executive Summary,qipc - research - science,Quantum Information Processing and Theoretical Physics,11
+Executive Summary,international - global - national,"Global Collaboration and Security Strategy in Technology,",11
+Executive Summary,sensor - technology - measurement,Advanced Sensor Technology and Precision Measurement.,11
+Executive Summary,communication - key - secure,Secure Communication and Cryptography.,11
+Executive Summary,entanglement - communication - state,Quantum Entanglement and Information Theory,11
+Education and Training,talent - research - attract,Attracting Talent,7
+Education and Training,programme - international - research,R&D,7
+Education and Training,technology - skill - need,Workforce Development,7
+Education and Training,train - training - programme,Training programs,7
+Education and Training,education - school - program,Education in schools and universities,7
+Education and Training,effort - workforce - readiness,Industry readiness,7
+Education and Training,photonics - optic - fellowship,Leadership in photonics,7
+Funding and Investment,research - program - support,Research and Funding Programs,8
+Funding and Investment,technology - innovation - centre,Technology and Innovation Hub,8
+Funding and Investment,fund - government - funding,Government Funding and Investment in Technology,8
+Funding and Investment,technology - research - institute,Technology and Research Institutes in Berlin,8
+Funding and Investment,qipc - science - information,Quantum Information and Quantum Science Applications,8
+Funding and Investment,sensor - clock - measurement,Advanced Sensing and Metrology Technologies,8
+Funding and Investment,budget - cost - euro,Financial Planning and Budget Management,8
+Funding and Investment,computer - security - communication,Cybersecurity and Cryptography,8
+Governance,technology - research - qt,Technology and Project Development,5
+Governance,science - committee - information,"Science, Research, and Committee Activities",5
+Governance,technology - sensor - realization,"Technology, Measurement, and Quantum Sensors",5
+Governance,computer - development - machine,"Computing, Machine Learning, and Technology",5
+Governance,cryptography - communication - network,Cryptography and Secure Communication,5
+Social and Ethical Implications,technology - research - innovation,Technology and Societal Impact,7
+Social and Ethical Implications,gender - woman - community,Gender Equality and Empowerment,7
+Social and Ethical Implications,government - business - national,Government Regulation and Security,7
+Social and Ethical Implications,standard - work - include,Standards and Development Activitie,7
+Social and Ethical Implications,computer - communication - use,Cybersecurity and Information Systems,7
+Social and Ethical Implications,computer - process - molecule,Computational Modeling and Simulation,7
+Social and Ethical Implications,sensor - image - mri,Medical Imaging and Sensor Technology,7
+International Collaboration,international - collaboration - research,International Research and Technological Cooperation,5
+International Collaboration,technology - ip - security,Intellectual Property and Security in International Policy,5
+International Collaboration,technology - million - communication,Space and Communication Technology Projects,5
+International Collaboration,compute - software - program,High-Performance Computing and Software Development,5

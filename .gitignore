@@ -8,9 +8,19 @@ data/df_topics.csv
 data/d_values.csv
 data/df_filtered.csv
 data/df_clean.csv
+data/d_values.txt
+data/release_dates.csv
+data/topic_names_old.csv
+data/categories/
+results/
+plots/
+src/.Rhistory
 
 # Ignore the forecasting-topic-venv virtual environment
 forecasting-topics-venv/
+
+# Ignore some source code
+src/topic_modelling_categories_release_dates.py
 
 # Ignore virtual environment directories
 venv/

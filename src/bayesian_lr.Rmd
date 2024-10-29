@@ -1,0 +1,646 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-12-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(rethinking)
+library(lmerTest)
+library(tidyverse)
+library(dplyr)
+library(purrr)
+library(gridExtra)
+library(brms)
+library(tidybayes)
+
+```
+
+# Load the data
+
+```{r}
+# Define the topic name
+topic_name <- "National Strategy and Recommendations"
+
+# Construct the file path
+file_path <- paste0("../data/categories/df_topics_", topic_name, ".csv")
+
+# Read the CSV file
+df <- read_csv(file_path)
+```
+
+## Renaming columns for brms
+
+```{r}
+
+# Select the original column names starting from the second column
+original_columns <- colnames(df)[2:ncol(df)]
+
+# Create new names like Topic_1, Topic_2, etc.
+new_column_names <- paste0("Topic_", seq_along(original_columns))
+
+# Create a dictionary (named list) to map new names to original names
+column_name_dict <- setNames(original_columns, new_column_names)
+
+# Rename the columns in the data frame
+df <- df %>%
+  rename_with(~ new_column_names, .cols = 2:ncol(.))
+
+```
+
+## Transforming the data
+
+```{r}
+
+# Transform the `year` column so that the first year is 0
+min_year <- min(df$year)  # Get the minimum year
+df <- df %>%
+  mutate(year_scaled = year - min_year)
+
+# Or, alternatively, do what we did in Python - so we are using index instead of "time" from point 0
+df <- df %>%
+  mutate(year_seq = seq_along(year))
+
+# Get column names for next step
+topic_columns <- colnames(df)[4:ncol(df)-2]
+
+# Multiple by 100 to get percentages and not proportions
+df <- df %>%
+  mutate(across(all_of(topic_columns), ~ . * 100))
+
+# Alternatively - scale the values
+#df <- df %>%
+  #mutate(across(all_of(topic_columns), ~ scale(.) %>% as.numeric(), .names = "scaled_{col}"))
+
+```
+
+# Fitting the models
+
+## Fitting a single bayesian linear and polynomial regressions
+
+This is mostly for testing purposes, to be deleted later. Maybe increase the prior for the slope to 1.
+
+```{r}
+
+# Linear regression
+
+m1 <- brm(
+  formula = Topic_5 ~ year_scaled,
+  data = df,
+  family = gaussian(), 
+  prior = c(
+    prior(normal(7, 3), class = "Intercept"),
+    prior(normal(0, 0.5), class = "b")
+  ),
+  chains = 4,
+  iter = 2000,
+  warmup = 500,
+  seed = 123
+)
+
+m1 <- add_criterion(m1, criterion = "loo")
+m1$criteria$loo
+
+# Polynomial regression
+
+m2 <- brm(
+  formula = Topic_14 ~ poly(year_scaled, 2),
+  data = df,
+  family = gaussian(), 
+  prior = c(
+    prior(normal(7, 6), class = "Intercept"),
+    prior(normal(0, 40), class = "b")
+  ),
+  chains = 4,
+  iter = 2000,
+  warmup = 500,
+  seed = 123,
+  silent = TRUE
+)
+
+m2 <- add_criterion(m2, criterion = "loo")
+m2$criteria$loo
+
+```
+
+### Plotting
+
+Parameter estimates and convergence chains.
+
+```{r}
+
+plot(m2)
+
+```
+
+A lr line on top of the data plot.
+
+```{r}
+
+# Predict the fitted values
+predicted_values <- posterior_predict(m1)
+
+# Extract the fitted (mean) values from the posterior predictions
+df$fitted_values <- apply(predicted_values, 2, mean)
+
+# Calculate 89% credible intervals
+df$lower <- apply(predicted_values, 2, quantile, probs = 0.055)
+df$upper <- apply(predicted_values, 2, quantile, probs = 0.945)
+
+# Retrieve the original name for Topic_1 from the dictionary
+original_name <- column_name_dict[["Topic_1"]]
+
+# Plot the data points, fitted line, and 89% credible intervals
+ggplot(df, aes(x = year, y = Topic_1)) +
+  geom_point(color = "blue", alpha = 0.6) +  
+  geom_line(aes(y = fitted_values), color = "red", size = 1.2) +  
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "gray") +
+  labs(title = paste(original_name),
+       x = "Year",
+       y = "Topic Coverage") +
+  theme_minimal()
+
+```
+
+## Fitting a linear regression to all topics and producing plots
+
+```{r}
+
+# Function to fit the model, calculate HDPI, and return the plots for each topic
+fit_and_plot <- function(topic_col, topic_name) {
+  
+  # Fit the model for each topic
+  formula <- as.formula(paste0(topic_col, " ~ year_scaled"))
+  model <- brm(
+    formula = formula,
+    data = df,
+    family = gaussian(), 
+    prior = c(
+      prior(normal(7, 3), class = "Intercept"),
+      prior(normal(0, 0.5), class = "b")
+    ),
+    chains = 4,
+    iter = 2000,
+    warmup = 500,
+    seed = 123,
+    silent = TRUE
+  )
+  
+  # Calculate R^2
+  r2 <- bayes_R2(model)[1, "Estimate"] 
+  
+  # Calculate adjusted R^2
+  n <- nrow(df)  # Number of observations
+  p <- 1  # Number of predictors (just the year_scaled variable in simple regression)
+  adjusted_r2 <- 1 - (1 - r2) * (n - 1) / (n - p - 1)
+  
+  # Extract posterior samples and calculate HDPI for the slope & intercept
+  posterior_samples <- posterior_samples(model)
+  
+  # Slope
+  slope_samples <- posterior_samples$b_year_scaled
+  hdi_slope <- mode_hdi(slope_samples, .width = 0.89)
+  slope_lower <- hdi_slope$ymin
+  slope_upper <- hdi_slope$ymax
+  slope_mode <- hdi_slope$y 
+  slope_hdi_width <- slope_upper - slope_lower
+  
+  # Intercept
+  intercept_samples <- posterior_samples$b_Intercept
+  hdi_intercept <- mode_hdi(intercept_samples, .width = 0.89)
+  intercept_lower <- hdi_intercept$ymin
+  intercept_upper <- hdi_intercept$ymax
+  intercept_mode <- hdi_intercept$y
+  intercept_hdi_width <- intercept_upper - intercept_lower
+  
+  # Plot the slope posterior distribution with HDPI and point estimate
+  slope_plot <- ggplot(data.frame(slope_samples), aes(x = slope_samples)) +
+    geom_density(fill = "lightblue", alpha = 0.6) +
+    geom_vline(xintercept = slope_lower, color = "red", linetype = "dashed", size = 1) +  # HDPI lower bound
+    geom_vline(xintercept = slope_upper, color = "red", linetype = "dashed", size = 1) +  # HDPI upper bound
+    geom_vline(xintercept = slope_mode, color = "blue", linetype = "solid", size = 1) +  # Point estimate (mode)
+    annotate("rect", xmin = slope_lower, xmax = slope_upper, ymin = 0, ymax = Inf, alpha = 0.2, fill = "red") + #    Shaded HDPI region
+    annotate("text", x = slope_lower, y = 0.05, label = paste0(round(slope_lower, 2)), color = "red", angle = 90,  vjust = -0.5) +
+    annotate("text", x = slope_upper, y = 0.05, label = paste0(round(slope_upper, 2)), color = "red", angle = 90, vjust = -0.5) +
+    annotate("text", x = slope_mode, y = 0.05, label = paste0(round(slope_mode, 2)), color = "blue", angle = 90, vjust = -0.5) +
+    annotate("text", x = Inf, y = Inf, label = paste0("HDPI Width: ", round(slope_hdi_width, 2)), 
+             hjust = 1.1, vjust = 1.1, size = 5, color = "red") +
+    labs(title = paste("Slope Posterior"),
+         x = "Slope Samples",
+         y = "Density") +
+    theme_minimal()
+  
+  # Plot the intercept posterior distribution with HDPI and point estimate
+  intercept_plot <- ggplot(data.frame(intercept_samples), aes(x = intercept_samples)) +
+    geom_density(fill = "lightblue", alpha = 0.6) +
+    geom_vline(xintercept = intercept_lower, color = "red", linetype = "dashed", size = 1) +  # HDPI lower bound
+    geom_vline(xintercept = intercept_upper, color = "red", linetype = "dashed", size = 1) +  # HDPI upper bound
+    geom_vline(xintercept = intercept_mode, color = "blue", linetype = "solid", size = 1) +  # Point estimate (mode)
+    annotate("rect", xmin = intercept_lower, xmax = intercept_upper, ymin = 0, ymax = Inf, alpha = 0.2, fill = "red") + # Shaded HDPI region
+    annotate("text", x = intercept_lower, y = 0.05, label = paste0(round(intercept_lower, 2)), color = "red", angle = 90, vjust = -0.5) +
+    annotate("text", x = intercept_upper, y = 0.05, label = paste0(round(intercept_upper, 2)), color = "red", angle = 90, vjust = -0.5) +
+    annotate("text", x = intercept_mode, y = 0.05, label = paste0(round(intercept_mode, 2)), color = "blue", angle = 90, vjust = -0.5) +
+    annotate("text", x = Inf, y = Inf, label = paste0("HDPI Width: ", round(intercept_hdi_width, 2)), 
+             hjust = 1.1, vjust = 1.1, size = 5, color = "red") +
+    labs(title = paste("Intercept Posterior"),
+         x = "Intercept Samples",
+         y = "Density") +
+    theme_minimal()
+  
+  # Predict fitted values
+  predicted_values <- posterior_predict(model)
+  df$fitted_values <- apply(predicted_values, 2, mean)
+  
+  # Calculate 89% intervals for the fitted values
+  df$lower <- apply(predicted_values, 2, quantile, probs = 0.055)
+  df$upper <- apply(predicted_values, 2, quantile, probs = 0.945)
+  
+  # Plot the data points, fitted line, and credible intervals
+  regression_plot <- ggplot(df, aes(x = year, y = .data[[topic_col]])) +
+    geom_point(color = "blue", alpha = 0.6) +  
+    geom_line(aes(y = fitted_values), color = "red", size = 1.2) +  
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "gray") +  
+    labs(title = paste(topic_name, "- Linear Fit"),
+         x = "Year",
+         y = "Topic Coverage") +
+    theme_minimal()
+  
+  # Combine the plots
+  combined_plot <- grid.arrange(
+    regression_plot,
+    arrangeGrob(slope_plot, intercept_plot, ncol = 2),
+    nrow = 2
+  )
+  
+  # Return the combined plot and adjusted R^2 value
+  list(combined_plot = combined_plot, adjusted_r2 = adjusted_r2)
+}
+
+# Prepping values for for the fit_and_plot function
+exclude_columns <- c("year", "year_scaled", "year_seq", "fitted_values", "lower", "upper")
+all_columns <- colnames(df)
+topic_columns <- setdiff(all_columns, exclude_columns)
+topic_names <- sapply(topic_columns, function(col) column_name_dict[[col]])
+
+# Apply the fit_and_plot function to each topic and collect the plots and R^2 values
+results <- map2(topic_columns, topic_names, fit_and_plot)
+
+# # Extract the adjusted R^2 values
+# adjusted_r2_values <- sapply(results, function(result) result$adjusted_r2)
+# 
+# # Create a dataframe to store the adjusted R^2 values
+# adjusted_r2_df <- data.frame(
+#   topic_name = topic_names,
+#   adjusted_r2 = adjusted_r2_values
+# )
+
+# Save adjusted R^2 dataframe to CSV (optional)
+#write.csv(adjusted_r2_df, "../results/adjusted_r2_values.csv", row.names = FALSE)
+
+```
+
+### Saving the plots
+
+```{r}
+
+# Loop through results and save each plot with the topic name
+for (i in seq_along(results)) {
+  plot_grob <- results[[i]]$combined_plot  # Extract the combined plot for each topic
+  
+  # Construct the directory and filename
+  topic_name_safe <- gsub(" ", "_", topic_names[i])  # Replace spaces with underscores
+  file_path <- paste0("../results/", topic_name, "/bayesian/hdpi_linear_fit_", topic_name_safe, ".png")
+  
+  # Create the directory if it doesn't exist
+  dir.create(dirname(file_path), showWarnings = FALSE, recursive = TRUE)
+  
+  # Save the plot using ggsave
+  ggsave(file_path, plot = plot_grob, width = 16, height = 8)
+  
+  # Message indicating plot has been saved
+  message("Saved plot as: ", file_path)
+}
+
+```
+
+## Fitting polynomial models
+
+```{r}
+
+# Function to fit polynomial regression and return the combined plot and adjusted R^2
+fit_and_plot_poly <- function(topic_col, topic_name) {
+  
+  # Fit the polynomial model (quadratic) for each topic
+  formula <- as.formula(paste0(topic_col, " ~ poly(year_scaled, 2)"))
+  model <- brm(
+    formula = formula,
+    data = df,
+    family = gaussian(), 
+    prior = c(
+      prior(normal(7, 6), class = "Intercept"),
+      prior(normal(0, 40), class = "b") 
+    ),
+    chains = 4,
+    iter = 2000,
+    warmup = 500,
+    seed = 123,
+    silent = TRUE
+  )
+  
+  # Calculate R^2 (Bayesian R^2)
+  r2 <- bayes_R2(model)[1, "Estimate"]
+  
+  # Calculate adjusted R^2
+  n <- nrow(df)  # Number of observations
+  p <- 2  # Number of predictors (year_scaled and year_scaled^2)
+  adjusted_r2_poly <- 1 - (1 - r2) * (n - 1) / (n - p - 1)
+  
+  # Plot the slope posterior distributions (b1 and b2)
+  posterior_samples <- posterior_samples(model)
+  b1_samples <- posterior_samples$b_polyyear_scaled21
+  b2_samples <- posterior_samples$b_polyyear_scaled22
+  
+  # Slope posterior plot for b1
+  slope_plot_b1 <- ggplot(data.frame(b1_samples), aes(x = b1_samples)) +
+    geom_density(fill = "lightblue", alpha = 0.6) +
+    labs(title = paste("Slope Posterior for b1 (Linear Term)"),
+         x = "Samples",
+         y = "Density") +
+    theme_minimal()
+  
+  # Slope posterior plot for b2
+  slope_plot_b2 <- ggplot(data.frame(b2_samples), aes(x = b2_samples)) +
+    geom_density(fill = "lightblue", alpha = 0.6) +
+    labs(title = paste("Slope Posterior for b2 (Quadratic Term)"),
+         x = "Samples",
+         y = "Density") +
+    theme_minimal()
+  
+  # Predict fitted values from the model
+  predicted_values <- posterior_predict(model)
+  df$fitted_values <- apply(predicted_values, 2, mean)
+  
+  # Calculate credible intervals
+  df$lower <- apply(predicted_values, 2, quantile, probs = 0.055)
+  df$upper <- apply(predicted_values, 2, quantile, probs = 0.945)
+  
+  # Plot the data points, fitted polynomial line, and credible intervals
+  regression_plot <- ggplot(df, aes(x = year, y = .data[[topic_col]])) +
+    geom_point(color = "blue", alpha = 0.6) +  
+    geom_line(aes(y = fitted_values), color = "red", size = 1.2) +  
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "gray") +  
+    labs(title = paste(topic_name),
+         x = "Year",
+         y = "Topic Coverage") +
+    theme_minimal()
+  
+  # Combine the regression plot with the slope posterior plots
+  combined_plot <- grid.arrange(regression_plot, slope_plot_b1, slope_plot_b2, ncol = 1)
+  
+  list(combined_plot = combined_plot, adjusted_r2_poly = adjusted_r2_poly)
+}
+
+# Apply the function to each topic and store results
+results_poly <- map2(topic_columns, topic_names, fit_and_plot_poly)
+
+# Extract the adjusted R^2 values from the polynomial model
+adjusted_r2_poly_values <- sapply(results_poly, function(result) result$adjusted_r2_poly)
+
+# Add the adjusted R^2 values for polynomial regression to the existing dataframe
+adjusted_r2_df$adjusted_r2_poly <- adjusted_r2_poly_values
+
+# Construct the file path for the adjusted R^2 dataframe
+file_path_r2 <- paste0("../results/", topic_name, "/bayesian/r2_table_", topic_name, ".csv")
+
+# Save the adjusted R^2 dataframe
+write.csv(adjusted_r2_df, file = file_path_r2, row.names = FALSE)
+
+```
+
+### Plotting poly models
+
+```{r}
+
+# Access and display plots for all topics in the results list
+for (i in seq_along(results_poly)) {
+  plot_grob <- results_poly[[i]]$combined_plot  # Extract the combined plot (grob object)
+  grid.newpage()  # Ensure a new plotting page for each plot
+  grid.draw(plot_grob)  # Use grid.draw to display the plot
+}
+
+```
+
+```{r}
+
+# Loop through results and save each plot with the topic name
+for (i in seq_along(results_poly)) {
+  plot_grob <- results_poly[[i]]$combined_plot  # Extract the combined plot for each topic
+  
+  # Construct the directory and filename
+  topic_name_safe <- gsub(" ", "_", topic_names[i])  # Replace spaces with underscores
+  file_path <- paste0("../results/", topic_name, "/bayesian/poly_fit_", topic_name_safe, ".png")
+  
+  # Create the directory if it doesn't exist
+  dir.create(dirname(file_path), showWarnings = FALSE, recursive = TRUE)
+  
+  # Save the plot using ggsave
+  ggsave(file_path, plot = plot_grob, width = 10, height = 10)
+  
+  # Message indicating plot has been saved
+  message("Saved plot as: ", file_path)
+}
+
+```
+
+## Model comparison
+
+This will not work on another machine right now.
+
+```{r}
+
+# Function to fit and compare linear and polynomial models, then return loo results
+fit_and_compare_models <- function(topic_col) {
+  
+  # Fit the linear model
+  formula_linear <- as.formula(paste0(topic_col, " ~ year_scaled"))
+  model_linear <- brm(
+    formula = formula_linear,
+    data = df,
+    family = gaussian(),
+    prior = c(
+      prior(normal(7, 3), class = "Intercept"),
+      prior(normal(0, 0.5), class = "b")  
+    ),
+    chains = 4,
+    iter = 2000,
+    warmup = 500,
+    seed = 123,
+    silent = TRUE
+  )
+  
+  # Add LOO criterion to the linear model
+  model_linear <- add_criterion(model_linear, criterion = "loo")
+  
+  # Fit the polynomial model (quadratic)
+  formula_poly <- as.formula(paste0(topic_col, " ~ poly(year_scaled, 2)"))
+  model_poly <- brm(
+    formula = formula_poly,
+    data = df,
+    family = gaussian(),
+    prior = c(
+      prior(normal(7, 6), class = "Intercept"),
+      prior(normal(0, 40), class = "b") 
+    ),
+    chains = 4,
+    iter = 2000,
+    warmup = 500,
+    seed = 123,
+    silent = TRUE
+  )
+  
+  # Add LOO criterion to the polynomial model
+  model_poly <- add_criterion(model_poly, criterion = "loo")
+  
+  # Compare the models using loo_compare
+  comparison <- loo_compare(model_linear, model_poly, criterion = "loo")
+  
+  # Extract the LOO comparison values for both models
+  loo_diff <- comparison[2, 1]
+  loo_se <- comparison[2, 2]
+  
+  # Return a list with the comparison results and the models
+  return(list(
+    loo_diff = loo_diff,
+    loo_se = loo_se,
+    model_linear = model_linear,
+    model_poly = model_poly
+  ))
+}
+
+# List to store the LOO results for each topic
+loo_results <- list()
+
+# Iterate over all topics and store the LOO comparison results
+for (i in seq_along(topic_columns)) {
+  topic_col <- topic_columns[i]
+  topic_name_full <- original_columns[i]
+  
+  # Fit the models and get the comparison results
+  comparison_results <- fit_and_compare_models(topic_col)
+  
+  # Store the results in the list
+  loo_results[[topic_name_full]] <- list(
+    loo_diff = comparison_results$loo_diff,
+    loo_se = comparison_results$loo_se
+  )
+}
+
+# Convert the LOO results to a dataframe
+loo_comparison_df <- do.call(rbind, lapply(names(loo_results), function(topic) {
+  data.frame(
+    topic = topic,
+    loo_diff = loo_results[[topic]]$loo_diff,
+    loo_se = loo_results[[topic]]$loo_se
+  )
+}))
+
+# View the final dataframe
+#print(loo_comparison_df)
+
+r2_df = read_csv(paste0("../results/", topic_name, "/bayesian/r2_table_", topic_name, ".csv"))
+r2_df$loo_diff <- loo_comparison_df$loo_diff
+r2_df$loo_se <- loo_comparison_df$loo_se
+
+# Function to interpret model comparison based on elpd_diff and se_diff
+interpret_model_comparison <- function(elpd_diff, se_diff) {
+  if (elpd_diff < -2 * se_diff) {
+    return("There is a difference between the models")
+  } else if (elpd_diff > 0) {
+    return("Second model better than reference")
+  } else if (abs(elpd_diff) <= se_diff) {
+    return("Models likely similar in performance")
+  } else {
+    return("Unclear difference between models")
+  }
+}
+
+# Apply interpretation to each row
+r2_df$interpretation <- mapply(interpret_model_comparison, 
+                                           r2_df$loo_diff, 
+                                           r2_df$loo_se)
+
+# View the updated dataframe
+#print(loo_comparison_df)
+
+# Save the LOO comparison results to a CSV file
+file_path_loo <- paste0("../results/", topic_name, "/bayesian/model_comparison_", topic_name, ".csv")
+write.csv(r2_df, file_path_loo, row.names = FALSE)
+
+message("Saved LOO comparison results to: ", file_path_loo)
+
+```
+
+# Spatial analysis
+
+```{r}
+
+# Load the data
+data = read.csv("../data/categories/full_df_topics_National Strategy and Recommendations.csv")
+
+# Clean up some stuff
+data <- data %>%
+  mutate(country = case_when(
+    country == "uk_2" ~ "uk",
+    country == "canada_2" ~ "canada",
+    country == "dk_2" ~ "dk",         # Assuming you want to change dk_2 to dk
+    TRUE ~ country                    # Leave other countries unchanged
+  ))
+
+# Add count
+grouped_data <- data %>%
+  group_by(pdf_name, country, Topic) %>%
+  summarise(topic_count = n()) %>%
+  ungroup()
+
+# Add offset
+grouped_data <- grouped_data %>%
+  group_by(pdf_name) %>%
+  mutate(total_paragraphs = sum(topic_count)) %>%
+  ungroup()
+
+# Filter the data to only include one topic
+grouped_data = grouped_data[grouped_data$Topic == "National Security and Defense Technology", ]
+
+```
+
+```{r}
+
+# Fit the Bayesian Poisson regression model with an offset
+poisson_model <- brm(
+  topic_count ~ country + offset(log(total_paragraphs)),
+  data = grouped_data,
+  family = poisson(), 
+  prior = c(set_prior("normal(0, 1)", class = "b")), 
+  chains = 4,           
+  iter = 2000,         
+  warmup = 1000,       
+  cores = 4
+)
+
+```
+
+```{r}
+
+# Summary of the model
+summary(poisson_model)
+
+# Plot the posterior distributions and trace plots
+plot(poisson_model)
+
+```
+
